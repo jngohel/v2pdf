@@ -24,7 +24,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     url = update.message.text.strip()
 
     if not url.startswith("http"):
-        await update.message.reply_text("Send a valid video link.")
+        await update.message.reply_text("Send a valid video or audio link.")
         return
 
     await update.message.reply_text(
@@ -48,12 +48,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "postprocessors": []
         }
 
-        with YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            downloaded_file = ydl.prepare_filename(info)
-
-        segments, _ = model.transcribe(downloaded_file)
-
         transcript = " ".join(
             segment.text.strip() for segment in segments
         ).strip()
@@ -62,6 +56,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             transcript = "No speech detected in the provided media."
 
         title = info.get("title", "Transcript")
+
         safe_title = "".join(
             c for c in title if c.isalnum() or c in " _-"
         ).strip()
@@ -74,10 +69,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         pdf = FPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
 
-        font_path = os.path.join(
-            os.path.dirname(__file__),
-            "NotoSans-Regular.ttf"
-        )
+        language = info_lang.language
+
+        if language == "hi":
+            font_file = "NotoSansDevanagari-Regular.ttf"
+        elif language == "gu":
+            font_file = "NotoSansGujarati-Regular.ttf"
+        else:
+            font_file = "NotoSans-Regular.ttf"
+
+        font_path = os.path.join(os.path.dirname(__file__), font_file)
+
         pdf.add_font("Noto", "", font_path)
         pdf.add_page()
 
