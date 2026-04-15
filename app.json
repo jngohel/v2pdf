@@ -1,0 +1,22 @@
+{
+  "name": "Video To PDF Telegram Bot",
+  "description": "Telegram bot that converts video speech into PDF transcript",
+  "keywords": [
+    "telegram",
+    "whisper",
+    "pdf"
+  ],
+  "env": {
+    "TELEGRAM_TOKEN": {
+      "description": "Telegram bot token"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    },
+    {
+      "url": "https://github.com/heroku/heroku-buildpack-apt"
+    }
+  ]
+}
