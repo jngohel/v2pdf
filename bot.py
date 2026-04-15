@@ -6,9 +6,9 @@ from fpdf import FPDF
 from yt_dlp import YoutubeDL
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
-from faster_whisper import WhisperModel
+import whisper
 
-TOKEN = os.getenv("TELEGRAM_TOKEN", "PUT_YOUR_BOT_TOKEN_HERE")
+TOKEN = os.getenv("TELEGRAM_TOKEN", "8506215613:AAFDt3udjpTJBJFsEzv6r7zHlTCG29hvhsQ")
 
 TEMP_DIR = "temp"
 os.makedirs(TEMP_DIR, exist_ok=True)
