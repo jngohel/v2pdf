@@ -47,8 +47,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         with YoutubeDL({
             "outtmpl": video_path,
-            "format": "bestvideo+bestaudio/best",
-            "merge_output_format": "mp4",
+            "format": "best[ext=mp4]/best",
             "quiet": True,
         }) as ydl:
             ydl.download([url])
