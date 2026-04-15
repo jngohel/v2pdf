@@ -1,7 +1,7 @@
 {
   "name": "Video To PDF Telegram Bot",
   "description": "Telegram bot that converts spoken video content into PDF transcript",
-  "repository": "https://github.com/YOUR_USERNAME/video-to-pdf-bot",
+  "repository": "https://github.com/jngohell/video-to-pdf-bot",
   "logo": "https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg",
   "keywords": ["telegram", "whisper", "pdf", "video", "speech-to-text"],
   "env": {
