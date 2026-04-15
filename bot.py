@@ -91,7 +91,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         font_path = os.path.join(os.path.dirname(__file__), font_file)
 
-        pdf.add_font("Noto", "", font_path)
+        pdf.add_font("Noto", "", font_path, uni=True)
         pdf.add_page()
 
         pdf.set_font("Noto", size=16)
@@ -101,10 +101,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         pdf.set_font("Noto", size=12)
 
         for paragraph in transcript.split(". "):
-    paragraph = paragraph.strip()
-    if paragraph:
-        pdf.multi_cell(0, 8, paragraph.encode("utf-8", "ignore").decode("utf-8"))
-        pdf.ln(1)
+            paragraph = paragraph.strip()
+
+            if paragraph:
+                pdf.multi_cell(
+                    0,
+                    8,
+                    paragraph.encode("utf-8", "ignore").decode("utf-8")
+                )
+                pdf.ln(1)
 
         pdf.output(pdf_path)
 
