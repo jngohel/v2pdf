@@ -101,10 +101,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         pdf.set_font("Noto", size=12)
 
         for paragraph in transcript.split(". "):
-            paragraph = paragraph.strip()
-            if paragraph:
-                pdf.multi_cell(0, 8, paragraph)
-                pdf.ln(1)
+    paragraph = paragraph.strip()
+    if paragraph:
+        pdf.multi_cell(0, 8, paragraph.encode("utf-8", "ignore").decode("utf-8"))
+        pdf.ln(1)
 
         pdf.output(pdf_path)
 
