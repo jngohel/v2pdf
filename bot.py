@@ -1,7 +1,6 @@
 import os
 import uuid
 import shutil
-import subprocess
 from fpdf import FPDF
 from yt_dlp import YoutubeDL
 from telegram import Update
@@ -35,33 +34,33 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Send a valid video link.")
         return
 
-    await update.message.reply_text("Downloading video and generating PDF transcript...")
+    await update.message.reply_text(
+        "Downloading audio and generating PDF transcript..."
+    )
 
     work_dir = os.path.join(TEMP_DIR, str(uuid.uuid4()))
     os.makedirs(work_dir, exist_ok=True)
 
     try:
-        video_path = os.path.join(work_dir, "video.mp4")
-        audio_path = os.path.join(work_dir, "audio.mp3")
-        pdf_path = os.path.join(work_dir, "transcript.pdf")
+        audio_path = os.path.join(work_dir, "audio.%(ext)s")
 
         with YoutubeDL({
-            "outtmpl": video_path,
-            "format": "best[ext=mp4]/best",
+            "format": "bestaudio/best",
+            "outtmpl": audio_path,
             "quiet": True,
+            "noplaylist": True,
         }) as ydl:
-            ydl.download([url])
+            info = ydl.extract_info(url, download=True)
+            downloaded_file = ydl.prepare_filename(info)
 
-        subprocess.run([
-            "ffmpeg", "-i", video_path,
-            "-vn", "-acodec", "mp3", "-y", audio_path
-        ], check=True)
+        segments, info = model.transcribe(downloaded_file)
 
-        segments, info = model.transcribe(audio_path)
         transcript = " ".join(segment.text for segment in segments).strip()
 
         if not transcript:
             transcript = "No speech detected in the video."
+
+        pdf_path = os.path.join(work_dir, "transcript.pdf")
 
         pdf = UnicodePDF()
         pdf.set_auto_page_break(auto=True, margin=15)
