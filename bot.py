@@ -17,13 +17,6 @@ model = WhisperModel("tiny", device="cpu", compute_type="int8")
 print("Model loaded")
 
 
-class UnicodePDF(FPDF):
-    def header(self):
-        self.set_font("Noto", size=14)
-        self.cell(0, 10, "Video Transcript", ln=True, align="C")
-        self.ln(5)
-
-
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
         return
@@ -35,70 +28,68 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     await update.message.reply_text(
-        "Downloading audio and generating PDF transcript..."
+        "Downloading audio and generating transcript PDF..."
     )
 
     work_dir = os.path.join(TEMP_DIR, str(uuid.uuid4()))
     os.makedirs(work_dir, exist_ok=True)
 
     try:
-        audio_path = os.path.join(work_dir, "audio.%(ext)s")
+        audio_template = os.path.join(work_dir, "audio.%(ext)s")
 
-        with YoutubeDL({
+        ydl_opts = {
             "format": "bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio",
-            "outtmpl": audio_path,
+            "outtmpl": audio_template,
             "quiet": True,
             "noplaylist": True,
             "cookiefile": "cookies.txt",
-            "postprocessors": [],
-        }) as ydl:
+            "postprocessors": []
+        }
+
+        with YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             downloaded_file = ydl.prepare_filename(info)
 
         segments, _ = model.transcribe(downloaded_file)
 
-        transcript = " ".join(segment.text for segment in segments).strip()
+        transcript = " ".join(segment.text.strip() for segment in segments).strip()
 
         if not transcript:
-            transcript = "No speech detected in the video."
+            transcript = "No speech detected in the provided media."
 
-        pdf_path = os.path.join(work_dir, "transcript.pdf")
+        title = info.get("title", "Transcript")
+        safe_title = "".join(
+            c for c in title if c.isalnum() or c in " _-"
+        ).strip()
+
+        if not safe_title:
+            safe_title = "Transcript"
+
+        pdf_path = os.path.join(work_dir, f"{safe_title}.pdf")
 
         pdf = FPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
 
         font_path = os.path.join(os.path.dirname(__file__), "NotoSans-Regular.ttf")
         pdf.add_font("Noto", "", font_path)
-        pdf.set_font("Noto", size=12)
-
         pdf.add_page()
-
-        title = info.get("title", "Video Transcript")
 
         pdf.set_font("Noto", size=16)
         pdf.multi_cell(0, 10, title)
-        pdf.ln(5)
+        pdf.ln(4)
 
         pdf.set_font("Noto", size=12)
-
-        for line in transcript.split(". "):
-            pdf.multi_cell(0, 8, line.strip())
+        for paragraph in transcript.split(". "):
+            pdf.multi_cell(0, 8, paragraph.strip())
             pdf.ln(1)
 
         pdf.output(pdf_path)
-
-        safe_title = "".join(
-            c for c in title if c.isalnum() or c in " _-"
-        ).strip()
-
-        if not safe_title:
-            safe_title = "transcript"
 
         with open(pdf_path, "rb") as pdf_file:
             await update.message.reply_document(
                 document=pdf_file,
                 filename=f"{safe_title}.pdf",
-                caption=f"{title} transcript PDF generated successfully"
+                caption=f"Transcript generated for: {title}"
             )
 
     except Exception as e:
