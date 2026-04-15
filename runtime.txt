@@ -1,0 +1,6 @@
+python-telegram-bot==20.8
+yt-dlp
+openai-whisper
+ffmpeg-python
+fpdf2
+torch
