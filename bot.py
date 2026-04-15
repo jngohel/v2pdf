@@ -48,6 +48,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "postprocessors": []
         }
 
+        with YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            downloaded_file = ydl.prepare_filename(info)
+
+        segments_generator, info_lang = model.transcribe(
+            downloaded_file,
+            task="transcribe"
+        )
+
+        segments = list(segments_generator)
+
         transcript = " ".join(
             segment.text.strip() for segment in segments
         ).strip()
@@ -90,8 +101,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         pdf.set_font("Noto", size=12)
 
         for paragraph in transcript.split(". "):
-            pdf.multi_cell(0, 8, paragraph.strip())
-            pdf.ln(1)
+            paragraph = paragraph.strip()
+            if paragraph:
+                pdf.multi_cell(0, 8, paragraph)
+                pdf.ln(1)
 
         pdf.output(pdf_path)
 
