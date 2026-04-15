@@ -80,35 +80,42 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         pdf = FPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
 
+        normal_font = os.path.join(
+            os.path.dirname(__file__),
+            "NotoSans-Regular.ttf"
+        )
+        pdf.add_font("NotoNormal", "", normal_font, uni=True)
+
         language = info_lang.language
 
         if language == "hi":
-            font_file = "NotoSansDevanagari-Regular.ttf"
+            body_font = os.path.join(
+                os.path.dirname(__file__),
+                "NotoSansDevanagari-Regular.ttf"
+            )
         elif language == "gu":
-            font_file = "NotoSansGujarati-Regular.ttf"
+            body_font = os.path.join(
+                os.path.dirname(__file__),
+                "NotoSansGujarati-Regular.ttf"
+            )
         else:
-            font_file = "NotoSans-Regular.ttf"
+            body_font = normal_font
 
-        font_path = os.path.join(os.path.dirname(__file__), font_file)
+        pdf.add_font("NotoBody", "", body_font, uni=True)
 
-        pdf.add_font("Noto", "", font_path, uni=True)
         pdf.add_page()
 
-        pdf.set_font("Noto", size=16)
+        pdf.set_font("NotoNormal", size=16)
         pdf.multi_cell(0, 10, title)
         pdf.ln(4)
 
-        pdf.set_font("Noto", size=12)
+        pdf.set_font("NotoBody", size=12)
 
         for paragraph in transcript.split(". "):
             paragraph = paragraph.strip()
 
             if paragraph:
-                pdf.multi_cell(
-                    0,
-                    8,
-                    paragraph.encode("utf-8", "ignore").decode("utf-8")
-                )
+                pdf.multi_cell(0, 8, paragraph)
                 pdf.ln(1)
 
         pdf.output(pdf_path)
