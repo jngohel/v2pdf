@@ -1,6 +1,7 @@
 import os
 import uuid
 import shutil
+from pathlib import Path
 from fpdf import FPDF
 from yt_dlp import YoutubeDL
 from telegram import Update
@@ -19,7 +20,7 @@ print("Model loaded")
 
 class UnicodePDF(FPDF):
     def header(self):
-        self.set_font("Arial", "B", 14)
+        self.set_font("Noto", size=14)
         self.cell(0, 10, "Video Transcript", ln=True, align="C")
         self.ln(5)
 
@@ -64,8 +65,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         pdf = UnicodePDF()
         pdf.set_auto_page_break(auto=True, margin=15)
+
+        font_path = os.path.join(os.path.dirname(__file__), "NotoSans-Regular.ttf")
+        pdf.add_font("Noto", "", font_path)
+        pdf.set_font("Noto", size=12)
+
         pdf.add_page()
-        pdf.set_font("Arial", size=12)
 
         for line in transcript.split(". "):
             pdf.multi_cell(0, 8, line.strip())
