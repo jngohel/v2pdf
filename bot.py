@@ -42,7 +42,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "outtmpl": audio_template,
             "quiet": True,
             "noplaylist": True,
-            "cookiefile": "cookies.txt",
+            "http_headers": {
+    "Cookie": "csrftoken=WNbUUWIrOMKghZYvyCjPYJ7Zl6qPrlb5; datr=CE3faf-Z41g60V94lw4SOuQ5; ig_did=66BB6425-A7E9-4CE1-A9AE-2C7297C4CF7C; wd=407x749; dpr=3; mid=ad9NCAABAAFu2dODn7VSV7N9khZk; ds_user_id=45531100817; sessionid=45531100817%3A5FaXkPcY943bDh%3A27%3AAYggQzD62sUwrxVNOhTfvCwFPQyffZxRbo9fXjYMig; ps_l=1; ps_n=1; rur=\"PRN\\05445531100817\\0541807778429:01fea753bcde8fd32bd931e357d1ae68c514c8ddf1b1097f13030db8020f8c110d09127a\";"
+},
             "postprocessors": []
         }
 
@@ -52,7 +54,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         segments, _ = model.transcribe(downloaded_file)
 
-        transcript = " ".join(segment.text.strip() for segment in segments).strip()
+        transcript = " ".join(
+            segment.text.strip() for segment in segments
+        ).strip()
 
         if not transcript:
             transcript = "No speech detected in the provided media."
@@ -70,7 +74,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         pdf = FPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
 
-        font_path = os.path.join(os.path.dirname(__file__), "NotoSans-Regular.ttf")
+        font_path = os.path.join(
+            os.path.dirname(__file__),
+            "NotoSans-Regular.ttf"
+        )
         pdf.add_font("Noto", "", font_path)
         pdf.add_page()
 
@@ -79,6 +86,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         pdf.ln(4)
 
         pdf.set_font("Noto", size=12)
+
         for paragraph in transcript.split(". "):
             pdf.multi_cell(0, 8, paragraph.strip())
             pdf.ln(1)
@@ -100,7 +108,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 app = ApplicationBuilder().token(TOKEN).build()
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+app.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
+)
 
 print("Bot running...")
 app.run_polling()
