@@ -1,7 +1,7 @@
 import os
 import uuid
 import shutil
-from fpdf import FPDF
+from docx import Document
 from yt_dlp import YoutubeDL
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
@@ -28,7 +28,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     await update.message.reply_text(
-        "Downloading audio and generating transcript PDF..."
+        "Downloading audio and generating transcript document..."
     )
 
     work_dir = os.path.join(TEMP_DIR, str(uuid.uuid4()))
@@ -52,15 +52,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             info = ydl.extract_info(url, download=True)
             downloaded_file = ydl.prepare_filename(info)
 
-        segments_generator, info_lang = model.transcribe(
+        segments_generator, _ = model.transcribe(
             downloaded_file,
             task="transcribe"
         )
 
-        segments = list(segments_generator)
-
         transcript = " ".join(
-            segment.text.strip() for segment in segments
+            segment.text.strip() for segment in segments_generator
         ).strip()
 
         if not transcript:
@@ -75,55 +73,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not safe_title:
             safe_title = "Transcript"
 
-        pdf_path = os.path.join(work_dir, f"{safe_title}.pdf")
+        doc_path = os.path.join(work_dir, f"{safe_title}.docx")
 
-        pdf = FPDF()
-        pdf.set_auto_page_break(auto=True, margin=15)
+        document = Document()
+        document.add_heading(title, level=1)
+        document.add_paragraph(transcript)
+        document.save(doc_path)
 
-        normal_font = os.path.join(
-            os.path.dirname(__file__),
-            "NotoSans-Regular.ttf"
-        )
-        pdf.add_font("NotoNormal", "", normal_font, uni=True)
-
-        language = info_lang.language
-
-        if language == "hi":
-            body_font = os.path.join(
-                os.path.dirname(__file__),
-                "NotoSansDevanagari-Regular.ttf"
-            )
-        elif language == "gu":
-            body_font = os.path.join(
-                os.path.dirname(__file__),
-                "NotoSansGujarati-Regular.ttf"
-            )
-        else:
-            body_font = normal_font
-
-        pdf.add_font("NotoBody", "", body_font, uni=True)
-
-        pdf.add_page()
-
-        pdf.set_font("NotoNormal", size=16)
-        pdf.multi_cell(0, 10, title)
-        pdf.ln(4)
-
-        pdf.set_font("NotoBody", size=12)
-
-        for paragraph in transcript.split(". "):
-            paragraph = paragraph.strip()
-
-            if paragraph:
-                pdf.multi_cell(0, 8, paragraph)
-                pdf.ln(1)
-
-        pdf.output(pdf_path)
-
-        with open(pdf_path, "rb") as pdf_file:
+        with open(doc_path, "rb") as doc_file:
             await update.message.reply_document(
-                document=pdf_file,
-                filename=f"{safe_title}.pdf",
+                document=doc_file,
+                filename=f"{safe_title}.docx",
                 caption=f"Transcript generated for: {title}"
             )
 

@@ -3,5 +3,5 @@ yt-dlp
 faster-whisper==1.0.3
 ctranslate2==4.4.0
 onnxruntime==1.17.3
-fpdf2
 requests
+python-docx
