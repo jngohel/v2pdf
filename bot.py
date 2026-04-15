@@ -6,7 +6,7 @@ from fpdf import FPDF
 from yt_dlp import YoutubeDL
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
-import whisper
+from faster_whisper import WhisperModel
 
 TOKEN = os.getenv("TELEGRAM_TOKEN", "PUT_YOUR_BOT_TOKEN_HERE")
 
