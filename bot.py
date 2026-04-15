@@ -1,7 +1,6 @@
 import os
 import uuid
 import shutil
-import subprocess
 from fpdf import FPDF
 from yt_dlp import YoutubeDL
 from telegram import Update
@@ -20,7 +19,7 @@ print("Model loaded")
 
 class UnicodePDF(FPDF):
     def header(self):
-        self.set_font("Arial", "B", 14)
+        self.set_font("Noto", size=14)
         self.cell(0, 10, "Video Transcript", ln=True, align="C")
         self.ln(5)
 
@@ -35,39 +34,52 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Send a valid video link.")
         return
 
-    await update.message.reply_text("Downloading video and generating PDF transcript...")
+    await update.message.reply_text(
+        "Downloading audio and generating PDF transcript..."
+    )
 
     work_dir = os.path.join(TEMP_DIR, str(uuid.uuid4()))
     os.makedirs(work_dir, exist_ok=True)
 
     try:
-        video_path = os.path.join(work_dir, "video.mp4")
-        audio_path = os.path.join(work_dir, "audio.mp3")
-        pdf_path = os.path.join(work_dir, "transcript.pdf")
+        audio_path = os.path.join(work_dir, "audio.%(ext)s")
 
         with YoutubeDL({
-            "outtmpl": video_path,
-            "format": "bestvideo+bestaudio/best",
-            "merge_output_format": "mp4",
+            "format": "bestaudio[ext=m4a]/bestaudio[ext=mp3]/bestaudio",
+            "outtmpl": audio_path,
             "quiet": True,
+            "noplaylist": True,
+            "cookiefile": "cookies.txt",
+            "postprocessors": [],
         }) as ydl:
-            ydl.download([url])
+            info = ydl.extract_info(url, download=True)
+            downloaded_file = ydl.prepare_filename(info)
 
-        subprocess.run([
-            "ffmpeg", "-i", video_path,
-            "-vn", "-acodec", "mp3", "-y", audio_path
-        ], check=True)
+        segments, _ = model.transcribe(downloaded_file)
 
-        segments, info = model.transcribe(audio_path)
         transcript = " ".join(segment.text for segment in segments).strip()
 
         if not transcript:
             transcript = "No speech detected in the video."
 
-        pdf = UnicodePDF()
+        pdf_path = os.path.join(work_dir, "transcript.pdf")
+
+        pdf = FPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
+
+        font_path = os.path.join(os.path.dirname(__file__), "NotoSans-Regular.ttf")
+        pdf.add_font("Noto", "", font_path)
+        pdf.set_font("Noto", size=12)
+
         pdf.add_page()
-        pdf.set_font("Arial", size=12)
+
+        title = info.get("title", "Video Transcript")
+
+        pdf.set_font("Noto", size=16)
+        pdf.multi_cell(0, 10, title)
+        pdf.ln(5)
+
+        pdf.set_font("Noto", size=12)
 
         for line in transcript.split(". "):
             pdf.multi_cell(0, 8, line.strip())
@@ -75,16 +87,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         pdf.output(pdf_path)
 
-        with open(pdf_path, "rb") as pdf_file:
-            video_title = info.get("title", "video")
-            safe_title = "".join(c for c in video_title if c.isalnum() or c in " _-").strip()
-            if not safe_title:
-                safe_title = "video"
+        safe_title = "".join(
+            c for c in title if c.isalnum() or c in " _-"
+        ).strip()
 
+        if not safe_title:
+            safe_title = "transcript"
+
+        with open(pdf_path, "rb") as pdf_file:
             await update.message.reply_document(
                 document=pdf_file,
                 filename=f"{safe_title}.pdf",
-                caption=f"{video_title} transcript PDF generated successfully"
+                caption=f"{title} transcript PDF generated successfully"
             )
 
     except Exception as e:
